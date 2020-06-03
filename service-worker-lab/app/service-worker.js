@@ -7,3 +7,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   console.log('SW activating...');
 });
+
+self.addEventListener('fetch', event => {
+  console.log('fetching: ', event.request.url)
+});
