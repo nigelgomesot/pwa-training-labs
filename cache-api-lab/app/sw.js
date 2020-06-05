@@ -7,7 +7,7 @@ const filesToCache = [
   'pages/404.html'
 ];
 
-const staticCacheName = 'pages-cache-v1';
+const staticCacheName = 'pages-cache-v2';
 
 self.addEventListener('install', event => {
   console.log('SW attempting install.');
@@ -15,6 +15,25 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(staticCacheName)
     .then(cache => cache.addAll(filesToCache))
+  );
+});
+
+self.addEventListener('activate', event => {
+  console.log('SW attempting activate.');
+
+  const cacheWhiteList = [staticCacheName];
+
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhiteList.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+            return true;
+          }
+        })
+      );
+    })
   );
 });
 
@@ -46,8 +65,10 @@ self.addEventListener('fetch', event => {
         });
       });
     })
-    .catch(err => {
-      // TODO: respond with custom offline page.
+    .catch(_err => {
+      console.warn('unable to connect to internet');
+      return caches.match('pages/offline.html')
+          .then(response => response);
     })
   );
 });
