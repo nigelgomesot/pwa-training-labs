@@ -31,9 +31,20 @@ self.addEventListener('fetch', event => {
       }
       console.log('cache miss:', event.request.url);
 
-      return fetch(request.url);
+      return fetch(event.request.url).then(response => {
+        // TODO: Respond with custom 404 page.
+        if (response.status === 404) {
+          console.log('serving 404 page.');
 
-      // TODO: add fetched files to cache.
+          return caches.match('pages/404.html')
+          .then(response => response);
+        }
+        return caches.open(staticCacheName).then(cache => {
+          cache.put(event.request.url, response.clone());
+
+          return response;
+        });
+      });
     })
     .catch(err => {
       // TODO: respond with custom offline page.
