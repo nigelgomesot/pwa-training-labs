@@ -1,12 +1,13 @@
 
-const cacheName = 'cache-v1';
+const cacheName = 'cache-v2';
 const precacheResources = [
   '/',
   'index.html',
   'styles/main.css',
   'images/space1.jpg',
   'images/space2.jpg',
-  'images/space3.jpg'
+  'images/space3.jpg',
+  'manifest.json'
 ];
 
 self.addEventListener('install', event => {
