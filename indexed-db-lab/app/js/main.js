@@ -52,8 +52,6 @@ var idbApp = (function() {
     }
   });
 
-  // PENDING: Use the get method
-
   function addProducts() {
 
     // TODO 3.3 - add objects to the products store
@@ -136,7 +134,13 @@ var idbApp = (function() {
   function getByName(key) {
 
     // TODO 4.3 - use the get method to get an object by name
+    return dbPromise.then(db => {
+      const tx = db.transaction('products', 'readonly');
+      const store = tx.objectStore('products');
+      const index = store.index('name');
 
+      return index.get(key);
+    });
   }
 
   function displayByName() {
@@ -161,8 +165,51 @@ var idbApp = (function() {
   function getByPrice() {
 
     // TODO 4.4a - use a cursor to get objects by price
+    const lower = document.getElementById('priceLower').value;
+    const upper = document.getElementById('priceUpper').value;
+    const lowerNum = Number(lower);
+    const upperNum = Number(upper);
 
+    if (lower === '' && upper === '') { return };
+
+    let range;
+    if (lower !== '' && upper !== '') {
+      range = IDBKeyRange.bound(lowerNum, upperNum);
+    } else if ( lower === '' ) {
+      range = IDBKeyRange.upperBound(upperNum);
+    } else {
+      range = IDBKeyRange.lowerBound(lowerNum);
+    }
+
+    let s = '';
+    dbPromise.then(db => {
+      let tx = db.transaction('products', 'readonly');
+      let store = tx.objectStore('products');
+      let index = store.index('price');
+
+      return index.openCursor(range);
+    }).then(function showRange(cursor) {
+      if (!cursor) { return; }
+
+      console.log(`Cursored at: ${cursor.value.name}`);
+
+      s += `<h2>Price - ${cursor.value.price}</h2><p>`;
+
+      for (let field in cursor.value) {
+        s += `${field} = ${cursor.value[field]} <br>`;
+      }
+
+      s += '</p>';
+
+      return cursor.continue().then(showRange);
+    }).then(() => {
+      if (s === '') { s =  '<p>No results.</p>'; }
+
+      document.getElementById('results').innerHTML = s;
+    });
   }
+
+  // PENDING: Implement getByDesc
 
   function getByDesc() {
     var key = document.getElementById('desc').value;
