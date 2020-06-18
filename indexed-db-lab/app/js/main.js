@@ -113,6 +113,15 @@ var idbApp = (function() {
           material: 'mahogany',
           description: 'An intricately-designed, antique cabinet',
           quantity: 11
+        },
+        {
+          name: 'Chair2',
+          id: 'ch-blu-pin2',
+          price: 49.99,
+          color: 'blue',
+          material: 'pine',
+          description: 'A plain chair for the kitchen table',
+          quantity: 1
         }
       ];
 
@@ -209,8 +218,6 @@ var idbApp = (function() {
     });
   }
 
-  // PENDING: Implement getByDesc
-
   function getByDesc() {
     var key = document.getElementById('desc').value;
     if (key === '') {return;}
@@ -219,7 +226,25 @@ var idbApp = (function() {
     dbPromise.then(function(db) {
 
       // TODO 4.4b - get items by their description
+      const tx =  db.transaction('products', 'readonly');
+      const store = tx.objectStore('products');
+      const index = store.index('description');
 
+      return index.openCursor(range);
+
+    }).then(function showRange(cursor) {
+      if (!cursor) { return; }
+
+      console.log(`Cursored at: ${cursor.value.name}`);
+
+      s += `<h2>Description - ${cursor.value.description} </h2><p>`;
+
+      for (let field in cursor.value) {
+        s += `${field} = ${cursor.value[field]} </br>`;
+      }
+      s += '</p>';
+
+      return cursor.continue().then(showRange);
     }).then(function() {
       if (s === '') {s = '<p>No results.</p>';}
       document.getElementById('results').innerHTML = s;
