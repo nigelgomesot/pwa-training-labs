@@ -22,7 +22,7 @@ var idbApp = (function() {
     return;
   }
 
-  var dbPromise = idb.open('couches-n-things', 4, function(upgradeDb) {
+  var dbPromise = idb.open('couches-n-things', 5, function(upgradeDb) {
     switch (upgradeDb.oldVersion) {
       case 0:
         // a placeholder case so that the switch block will 
@@ -49,6 +49,10 @@ var idbApp = (function() {
         store.createIndex('description', 'description');
 
         // TODO 5.1 - create an 'orders' object store
+      case 4:
+        console.log('Creating orders object store');
+        upgradeDb.createObjectStore('orders', { keyPath: 'id' });
+
     }
   });
 
@@ -254,7 +258,53 @@ var idbApp = (function() {
   function addOrders() {
 
     // TODO 5.2 - add items to the 'orders' object store
+    dbPromise.then(db => {
+      const tx = db.transaction('orders', 'readwrite');
+      const store = tx.objectStore('orders');
 
+      const items = [
+        {
+          name: 'Cabinet',
+          id: 'ca-brn-ma',
+          price: 799.99,
+          color: 'brown',
+          material: 'mahogany',
+          description: 'An intricately-designed, antique cabinet',
+          quantity: 7
+        },
+        {
+          name: 'Armchair',
+          id: 'ac-gr-pin',
+          price: 299.99,
+          color: 'grey',
+          material: 'pine',
+          description: 'A plush recliner armchair',
+          quantity: 3
+        },
+        {
+          name: 'Couch',
+          id: 'cch-blk-ma',
+          price: 499.99,
+          color: 'black',
+          material: 'mahogany',
+          description: 'A very comfy couch',
+          quantity: 3
+        }
+      ];
+
+      return Promise.all(
+        items.map(item => {
+          console.log('adding item:', item);
+
+          return store.add(item);
+        })
+      ).catch(err => {
+        console.error('Adding orders failed:', err);
+        tx.abort();
+      }).then(() => {
+        console.log('Adding items completed');
+      });
+    });
   }
 
   function showOrders() {
@@ -262,12 +312,29 @@ var idbApp = (function() {
     dbPromise.then(function(db) {
 
       // TODO 5.3 - use a cursor to display the orders on the page
+      var tx = db.transaction('orders', 'readonly');
+      var store = tx.objectStore('orders');
 
+      return store.openCursor();
+    }).then(function buildShowOrders(cursor) {
+      if (!cursor) { return };
+
+      console.log(`Cursored at: ${cursor.value.name}`);
+      s += `<h2>Name - ${cursor.value.name} </h2><p>`;
+
+      for (let field in cursor.value) {
+        s += `${field} = ${cursor.value[field]} </br>`;
+      }
+      s += '</p>';
+
+      return cursor.continue().then(buildShowOrders);
     }).then(function() {
       if (s === '') {s = '<p>No results.</p>';}
       document.getElementById('orders').innerHTML = s;
     });
   }
+
+  // PENDING: Get all orders
 
   function getOrders() {
 
