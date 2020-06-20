@@ -339,7 +339,12 @@ var idbApp = (function() {
   function getOrders() {
 
     // TODO 5.4 - get all objects from 'orders' object store
+    return dbPromise.then(db => {
+      const tx = db.transaction('orders', 'readonly');
+      const store = tx.objectStore('orders');
 
+      return store.getAll();
+    });
   }
 
   function fulfillOrders() {
@@ -353,14 +358,39 @@ var idbApp = (function() {
   function processOrders(orders) {
 
     // TODO 5.5 - get items in the 'products' store matching the orders
-
+    return dbPromise.then(db => {
+      const tx = db.transaction('products');
+      const store = tx.objectStore('products');
+      
+      return Promise.all(
+        orders.map(order => {
+          return store.get(order.id).then(product => decrementQuantity(product, order));
+        })
+      );
+    });
   }
 
   function decrementQuantity(product, order) {
 
     // TODO 5.6 - check the quantity of remaining products
+    return new Promise((resolve, reject) => {
+      const item = product;
+      const quantityRemaining = item.quantity - order.quantity;
 
+      if (quantityRemaining < 0) {
+        const errorMessage = `Product ${item.id} out of stock!`; 
+        console.error(errorMessage);
+        document.getElementById('receipt').innerHTML = `<h3>${errorMessage}</h3>`
+
+        throw `Out of stock!`;
+      }
+
+      item.quantity = quantityRemaining;
+      resolve(item);
+    });
   }
+
+  // PENDING: Update the products object store
 
   function updateProductsStore(products) {
     dbPromise.then(function(db) {
