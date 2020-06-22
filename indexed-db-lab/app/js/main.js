@@ -390,12 +390,28 @@ var idbApp = (function() {
     });
   }
 
-  // PENDING: Update the products object store
-
   function updateProductsStore(products) {
     dbPromise.then(function(db) {
 
       // TODO 5.7 - update the items in the 'products' object store
+      const tx = db.transaction('products', 'readwrite');
+      const store = tx.objectStore('products');
+
+      return Promise.all(
+        products.map(product => {
+          console.log(`updating product: ${product.id}`);
+
+          return store.put(product);
+        })
+      ).catch(err => {
+        console.error('update products store failed', err);
+
+        tx.abort();
+      }).then(() => {
+        console.log('update products store completed');
+
+        tx.complete;
+      });
 
     }).then(function() {
       console.log('Orders processed successfully!');
